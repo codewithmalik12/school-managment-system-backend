@@ -26,13 +26,11 @@ app.use(express.urlencoded({ limit: '100mb', extended: true }));
 const mongoURI = process.env.MONGODB_URI || "mongodb://127.0.0.1:27017/school_management";
 console.log("Attempting to connect to MongoDB using URI:", mongoURI.replace(/\/\/[^@]+@/, "//[CREDENTIALS_REDACTED]@"));
 
-mongoose.connect(mongoURI)
+mongoose.connect(mongoURI, { serverSelectionTimeoutMS: 5000 })
   .then(() => console.log("Connected to MongoDB successfully"))
   .catch((err) => {
-    console.error("MongoDB connection error:", err);
-    if (!process.env.MONGODB_URI) {
-      console.log("Tip: Ensure a local MongoDB instance is running or provide MONGODB_URI in your .env file.");
-    }
+    console.error("MongoDB connection error:", err.message);
+    console.log("Tip: Ensure your MONGODB_URI in .env is correct, IP is whitelisted in Atlas, or a local MongoDB instance is running.");
   });
 
 // Routes

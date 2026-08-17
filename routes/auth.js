@@ -1,5 +1,6 @@
 import express from 'express';
 import bcrypt from 'bcryptjs';
+import mongoose from 'mongoose';
 import User from '../models/User.js';
 
 const router = express.Router();
@@ -7,6 +8,13 @@ const router = express.Router();
 // Register a new user (Teacher, Admin, or Student)
 router.post('/register', async (req, res) => {
     try {
+        if (mongoose.connection.readyState !== 1) {
+            return res.status(503).json({
+                status: "error",
+                message: "Database connection failed. Please check your MONGODB_URI in backend .env file or ensure MongoDB is running."
+            });
+        }
+
         const { firstName, lastName, email, password, role, phoneNumber, subject, grade, dp } = req.body;
 
         // Check if user already exists
@@ -44,7 +52,7 @@ router.post('/register', async (req, res) => {
         res.status(201).json({ status: "success", message: "User registered successfully", user: newUser });
     } catch (error) {
         console.error("Registration error:", error);
-        res.status(500).json({ status: "error", message: "Server error during registration" });
+        res.status(500).json({ status: "error", message: error.message || "Server error during registration" });
     }
 });
 
