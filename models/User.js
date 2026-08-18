@@ -16,6 +16,16 @@ const userSchema = new mongoose.Schema({
     feeStatus: { type: String, enum: ['Paid', 'Unpaid', 'Pending'], default: 'Unpaid' },
     feeAmount: { type: Number, default: 0 },
     feeDueDate: { type: Date },
+    paymentHistory: [{
+        amount: { type: Number, required: true },
+        paymentMethod: { type: String, required: true },
+        transactionId: { type: String, required: true },
+        accountDetails: { type: String },
+        paidAt: { type: Date, default: Date.now }
+    }],
+    latestPaymentMethod: { type: String },
+    latestTransactionId: { type: String },
+    latestPaidAt: { type: Date },
     results: [{
         subject: { type: String, required: true },
         marks: { type: Number, required: true },

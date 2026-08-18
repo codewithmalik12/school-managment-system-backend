@@ -202,6 +202,10 @@ router.put('/update-profile/:id', async (req, res) => {
                 feeStatus: user.feeStatus,
                 feeAmount: user.feeAmount,
                 feeDueDate: user.feeDueDate,
+                paymentHistory: user.paymentHistory,
+                latestPaymentMethod: user.latestPaymentMethod,
+                latestTransactionId: user.latestTransactionId,
+                latestPaidAt: user.latestPaidAt,
                 classes: user.classes,
                 results: user.results
             }
@@ -209,6 +213,72 @@ router.put('/update-profile/:id', async (req, res) => {
     } catch (error) {
         console.error("Update profile error:", error);
         res.status(500).json({ status: "error", message: "Server error during profile update" });
+    }
+});
+
+// Pay student fees (Bank Card, EasyPaisa, JazzCash)
+router.post('/pay-fee', async (req, res) => {
+    try {
+        const { studentId, paymentMethod, accountDetails, amount } = req.body;
+
+        const user = await User.findById(studentId);
+        if (!user || user.role !== 'student') {
+            return res.status(404).json({ status: "error", message: "Student account not found" });
+        }
+
+        const payAmount = Number(amount) || user.feeAmount || 0;
+        const transactionId = `TXN-${Date.now()}-${Math.floor(1000 + Math.random() * 9000)}`;
+        const now = new Date();
+
+        if (!user.paymentHistory) {
+            user.paymentHistory = [];
+        }
+
+        const paymentRecord = {
+            amount: payAmount,
+            paymentMethod: paymentMethod || 'Bank Card',
+            transactionId: transactionId,
+            accountDetails: accountDetails || '',
+            paidAt: now
+        };
+
+        user.paymentHistory.push(paymentRecord);
+        user.feeStatus = 'Paid';
+        user.latestPaymentMethod = paymentMethod || 'Bank Card';
+        user.latestTransactionId = transactionId;
+        user.latestPaidAt = now;
+
+        await user.save();
+
+        res.json({
+            status: "success",
+            message: "Fee payment processed successfully",
+            transactionId: transactionId,
+            user: {
+                _id: user._id,
+                email: user.email,
+                firstName: user.firstName,
+                lastName: user.lastName,
+                role: user.role,
+                dp: user.dp,
+                phoneNumber: user.phoneNumber,
+                subject: user.subject,
+                grade: user.grade,
+                rollNo: user.rollNo,
+                feeStatus: user.feeStatus,
+                feeAmount: user.feeAmount,
+                feeDueDate: user.feeDueDate,
+                paymentHistory: user.paymentHistory,
+                latestPaymentMethod: user.latestPaymentMethod,
+                latestTransactionId: user.latestTransactionId,
+                latestPaidAt: user.latestPaidAt,
+                classes: user.classes,
+                results: user.results
+            }
+        });
+    } catch (error) {
+        console.error("Fee payment error:", error);
+        res.status(500).json({ status: "error", message: error.message || "Server error processing fee payment" });
     }
 });
 
