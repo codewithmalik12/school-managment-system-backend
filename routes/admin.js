@@ -8,11 +8,43 @@ const router = express.Router();
 // GET all teachers
 router.get('/teachers', async (req, res) => {
     try {
-        const teachers = await User.find({ role: 'teacher' }).select('-password');
+        const teachers = await User.find({ role: { $regex: /^teacher$/i } }).select('-password');
         res.json({ status: 'success', teachers });
     } catch (error) {
         console.error("Error fetching teachers:", error);
         res.status(500).json({ status: 'error', message: 'Failed to fetch teachers' });
+    }
+});
+
+// POST a new teacher (Admin can add directly)
+router.post('/teachers', async (req, res) => {
+    try {
+        const { firstName, lastName, email, password, subject, phoneNumber, classes } = req.body;
+
+        const existingUser = await User.findOne({ email });
+        if (existingUser) {
+            return res.status(400).json({ status: "error", message: "User already exists with this email" });
+        }
+
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(password || "123456", salt);
+
+        const newTeacher = new User({
+            firstName,
+            lastName,
+            email,
+            password: hashedPassword,
+            role: 'teacher',
+            subject,
+            phoneNumber,
+            classes: classes || []
+        });
+
+        await newTeacher.save();
+        res.status(201).json({ status: 'success', teacher: newTeacher });
+    } catch (error) {
+        console.error("Error creating teacher:", error);
+        res.status(500).json({ status: 'error', message: 'Failed to create teacher' });
     }
 });
 
@@ -53,7 +85,7 @@ router.delete('/teachers/:id', async (req, res) => {
 // GET all students
 router.get('/students', async (req, res) => {
     try {
-        const students = await User.find({ role: 'student' }).select('-password');
+        const students = await User.find({ role: { $regex: /^student$/i } }).select('-password');
         res.json({ status: 'success', students });
     } catch (error) {
         console.error("Error fetching students:", error);
